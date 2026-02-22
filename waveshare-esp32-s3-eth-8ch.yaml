@@ -1,0 +1,486 @@
+substitutions:
+  device_name: "waveshare-relay-velux"
+  device_comment: "WaveShare ESP32-S3-POE-ETH-8DI-8RO"
+  device_friendly: "Velux Rolluiken"
+
+esphome:
+  name: ${device_name}
+  friendly_name: ${device_friendly}
+  min_version: 2025.5.0
+  comment: ${device_comment}
+  name_add_mac_suffix: false
+
+time:
+  - platform: homeassistant
+    id: homeassistant_time
+    on_time_sync:
+      then:
+        # Update the RTC when the synchronization was successful
+        pcf85063.write_time:
+  - platform: pcf85063
+    id: pcf85063_time
+
+# Waveshare ESP32-S3-ETH-8DI-8RO uses ESP32-S3-WROOM-1U-N16R8
+# -> 16 MB flash
+# -> 8 MB psram
+esp32:
+  board: esp32s3box #esp32-s3-devkitc-1
+  flash_size: 16MB
+  framework:
+    type: arduino
+
+psram:
+  mode: octal
+  speed: 80MHz
+
+# Enable logging
+logger:
+
+# Enable Home Assistant API
+api:
+  encryption:
+    key: !secret api_encryption_key
+
+# Allow Over-The-Air updates
+ota:
+  - platform: esphome
+    password: !secret ota_password
+
+ethernet:
+  type: W5500
+  clk_pin: GPIO15
+  mosi_pin: GPIO13
+  miso_pin: GPIO14
+  cs_pin: GPIO16
+  interrupt_pin: GPIO12
+
+text_sensor:
+  - platform: ethernet_info
+    ip_address:
+      name: "${device_name} - IP Address"
+      address_0:
+        name: "${device_name} - IP Address 0"
+      address_1:
+        name: "${device_name} - IP Address 1"
+      address_2:
+        name: "${device_name} - IP Address 2"
+      address_3:
+        name: "${device_name} - IP Address 3"
+      address_4:
+        name: "${device_name} - IP Address 4"
+    dns_address:
+      name: "${device_name} - DNS Address"
+    mac_address:
+      name: "${device_name} - MAC Address"
+
+# Enable Web server
+web_server:
+  port: 80
+
+
+
+# ======================
+# I2C BUS
+# ======================
+
+i2c:
+  sda: GPIO42
+  scl: GPIO41
+  scan: true
+  frequency: 400kHz
+  id: i2cbus
+
+
+# ======================
+# IO expander
+# ======================
+
+pca9554:
+  - id: 'TCA9554_hub'
+    address: 0x20
+
+# ========================
+# GLOBALS
+# ========================
+
+globals:
+
+- id: pos1
+  type: int
+  restore_value: yes
+
+- id: pos2
+  type: int
+  restore_value: yes
+
+- id: pos3
+  type: int
+  restore_value: yes
+
+- id: pos4
+  type: int
+  restore_value: yes
+
+
+- id: max1
+  type: int
+  restore_value: yes
+  initial_value: '10000'
+
+- id: max2
+  type: int
+  restore_value: yes
+  initial_value: '10000'
+
+- id: max3
+  type: int
+  restore_value: yes
+  initial_value: '10000'
+
+- id: max4
+  type: int
+  restore_value: yes
+  initial_value: '10000'
+
+
+- id: dir1
+  type: int
+
+- id: dir2
+  type: int
+
+- id: dir3
+  type: int
+
+- id: dir4
+  type: int
+
+
+
+# ======================
+# INA219 STROOMMETING
+# ======================
+
+sensor:
+
+  - platform: ina219
+    address: 0x40
+    shunt_resistance: 0.1 ohm
+    current:
+      name: "Rolluik 1 Stroom"
+      id: current1
+    power:
+      name: "Rolluik 1 Vermogen"
+      id: power1
+
+  - platform: ina219
+    address: 0x41
+    shunt_resistance: 0.1 ohm
+    current:
+      name: "Rolluik 2 Stroom"
+      id: current2
+    power:
+      name: "Rolluik 2 Vermogen"
+      id: power2
+
+  - platform: ina219
+    address: 0x44
+    shunt_resistance: 0.1 ohm
+    current:
+      name: "Rolluik 3 Stroom"
+      id: current3
+    power:
+      name: "Rolluik 3 Vermogen"
+      id: power3
+
+  - platform: ina219
+    address: 0x45
+    shunt_resistance: 0.1 ohm
+    current:
+      name: "Rolluik 4 Stroom"
+      id: current4
+    power:
+      name: "Rolluik 4 Vermogen"
+      id: power4
+
+
+# ======================
+# ENCODERS
+# ======================
+
+  - platform: pulse_counter
+    pin: GPIO1
+    name: "Rolluik 1 Encoder"
+    id: enc1
+    update_interval: 100ms
+    internal: true
+    on_value:
+      lambda: |-
+        if(id(dir1)==1) id(pos1)++;
+        if(id(dir1)==-1) id(pos1)--;
+
+  - platform: pulse_counter
+    pin: GPIO2
+    name: "Rolluik 2 Encoder"
+    id: enc2
+    internal: true
+    on_value:
+      lambda: |-
+        if(id(dir2)==1) id(pos2)++;
+        if(id(dir2)==-1) id(pos2)--;
+
+  - platform: pulse_counter
+    pin: GPIO3
+    name: "Rolluik 3 Encoder"
+    id: enc3
+    internal: true
+    on_value:
+      lambda: |-
+        if(id(dir3)==1) id(pos3)++;
+        if(id(dir3)==-1) id(pos3)--;
+
+  - platform: pulse_counter
+    pin: GPIO4
+    name: "Rolluik 4 Encoder"
+    id: enc4
+    internal: true
+    on_value:
+      lambda: |-
+        if(id(dir4)==1) id(pos4)++;
+        if(id(dir4)==-1) id(pos4)--;
+
+
+
+# ======================
+# RELAYS
+# ======================
+
+switch:
+
+  - platform: gpio
+    pin:
+      pca9554: TCA9554_hub
+      number: 0
+    id: r1_up
+
+  - platform: gpio
+    pin:
+      pca9554: TCA9554_hub
+      number: 1
+    id: r1_down
+
+  - platform: gpio
+    pin:
+      pca9554: TCA9554_hub
+      number: 2
+    id: r2_up
+
+  - platform: gpio
+    pin:
+      pca9554: TCA9554_hub
+      number: 3
+    id: r2_down
+
+  - platform: gpio
+    pin:
+      pca9554: TCA9554_hub
+      number: 4
+    id: r3_up
+
+  - platform: gpio
+    pin:
+      pca9554: TCA9554_hub
+      number: 5
+    id: r3_down
+
+  - platform: gpio
+    pin:
+      pca9554: TCA9554_hub
+      number: 6
+    id: r4_up
+
+  - platform: gpio
+    pin:
+      pca9554: TCA9554_hub
+      number: 7
+    id: r4_down
+
+
+# ======================
+# COVER TEMPLATE
+# ======================
+
+cover:
+
+  - platform: template
+    name: "Rolluik 1"
+    id: rolluik_1
+    lambda: |-
+      return (float)id(pos1)/id(max1);
+    open_action:
+      - lambda: id(dir1)=1;
+      - switch.turn_off: r1_down
+      - switch.turn_on: r1_up
+    close_action:
+      - lambda: id(dir1)=-1;
+      - switch.turn_off: r1_up
+      - switch.turn_on: r1_down
+    stop_action:
+      - lambda: id(dir1)=0;
+      - switch.turn_off: r1_up
+      - switch.turn_off: r1_down
+    optimistic: true
+
+  - platform: template
+    name: "Rolluik 2"
+    id: rolluik_2
+    lambda: |-
+      return (float)id(pos2)/id(max2);
+    open_action:
+      - lambda: id(dir2)=1;
+      - switch.turn_off: r2_down
+      - switch.turn_on: r2_up
+    close_action:
+      - lambda: id(dir2)=-1;
+      - switch.turn_off: r2_up
+      - switch.turn_on: r2_down
+    stop_action:
+      - lambda: id(dir2)=0;
+      - switch.turn_off: r2_up
+      - switch.turn_off: r2_down
+    optimistic: true
+
+
+  - platform: template
+    name: "Rolluik 3"
+    id: rolluik_3
+    lambda: |-
+      return (float)id(pos3)/id(max3);
+    open_action:
+      - lambda: id(dir3)=1;
+      - switch.turn_off: r3_down
+      - switch.turn_on: r3_up
+    close_action:
+      - lambda: id(dir3)=-1;
+      - switch.turn_off: r3_up
+      - switch.turn_on: r3_down
+    stop_action:
+      - lambda: id(dir3)=0;
+      - switch.turn_off: r3_up
+      - switch.turn_off: r3_down
+    optimistic: true
+
+
+  - platform: template
+    name: "Rolluik 4"
+    id: rolluik_4
+    lambda: |-
+      return (float)id(pos4)/id(max4);
+    open_action:
+      - lambda: id(dir4)=1;
+      - switch.turn_off: r4_down
+      - switch.turn_on: r4_up
+    close_action:
+      - lambda: id(dir4)=-1;
+      - switch.turn_off: r4_up
+      - switch.turn_on: r4_down
+    stop_action:
+      - lambda: id(dir4)=0;
+      - switch.turn_off: r4_up
+      - switch.turn_off: r4_down
+    optimistic: true
+
+
+# ======================
+# HOMING BUTTONS
+# ======================
+
+button:
+
+  - platform: template
+    name: "Home Rolluik 1"
+    id: hr1
+    on_press:
+      - cover.open: rolluik_1
+      - wait_until:
+          lambda: return id(current1).state > 1.5;
+      - cover.stop: rolluik_1
+      - lambda: id(pos1)=0;
+      - cover.close: rolluik_1
+      - wait_until:
+          lambda: return id(current1).state > 1.5;
+      - cover.stop: rolluik_1
+      - lambda: id(max1)=id(pos1);
+
+  - platform: template
+    name: "Home Rolluik 2"
+    id: hr2
+    on_press:
+      - cover.open: rolluik_2
+      - wait_until:
+          lambda: return id(current2).state > 1.5;
+      - cover.stop: rolluik_2
+      - lambda: id(pos2)=0;
+      - cover.close: rolluik_2
+      - wait_until:
+          lambda: return id(current2).state > 1.5;
+      - cover.stop: rolluik_2
+      - lambda: id(max2)=id(pos2);
+
+  - platform: template
+    name: "Home Rolluik 3"
+    id: hr3
+    on_press:
+      - cover.open: rolluik_3
+      - wait_until:
+          lambda: return id(current3).state > 1.5;
+      - cover.stop: rolluik_3
+      - lambda: id(pos3)=0;
+      - cover.close: rolluik_3
+      - wait_until:
+          lambda: return id(current3).state > 1.5;
+      - cover.stop: rolluik_3
+      - lambda: id(max3)=id(pos3);
+
+  - platform: template
+    name: "Home Rolluik 4"
+    id: hr4
+    on_press:
+      - cover.open: rolluik_4
+      - wait_until:
+          lambda: return id(current4).state > 1.5;
+      - cover.stop: rolluik_4
+      - lambda: id(pos4)=0;
+      - cover.close: rolluik_4
+      - wait_until:
+          lambda: return id(current4).state > 1.5;
+      - cover.stop: rolluik_4
+      - lambda: id(max4)=id(pos4);
+
+interval:
+- interval: 200ms
+  then:
+    - lambda: |-
+        if(id(dir1)!=0 && id(current1).state > 1.8){
+         id(r1_up).turn_off();
+         id(r1_down).turn_off();
+         id(dir1)=0;
+        }
+
+        if(id(dir2)!=0 && id(current2).state > 1.8){
+         id(r2_up).turn_off();
+         id(r2_down).turn_off();
+         id(dir2)=0;
+        }
+
+        if(id(dir3)!=0 && id(current3).state > 1.8){
+         id(r3_up).turn_off();
+         id(r3_down).turn_off();
+         id(dir3)=0;
+        }
+
+        if(id(dir4)!=0 && id(current4).state > 1.8){
+         id(r4_up).turn_off();
+         id(r4_down).turn_off();
+         id(dir4)=0;
+        }

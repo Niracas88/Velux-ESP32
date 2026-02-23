@@ -10,16 +10,6 @@ esphome:
   comment: ${device_comment}
   name_add_mac_suffix: false
 
-time:
-  - platform: homeassistant
-    id: homeassistant_time
-    on_time_sync:
-      then:
-        # Update the RTC when the synchronization was successful
-        pcf85063.write_time:
-  - platform: pcf85063
-    id: pcf85063_time
-
 # Waveshare ESP32-S3-ETH-8DI-8RO uses ESP32-S3-WROOM-1U-N16R8
 # -> 16 MB flash
 # -> 8 MB psram
@@ -32,6 +22,16 @@ esp32:
 psram:
   mode: octal
   speed: 80MHz
+
+time:
+  - platform: homeassistant
+    id: homeassistant_time
+    on_time_sync:
+      then:
+        # Update the RTC when the synchronization was successful
+        pcf85063.write_time:
+  - platform: pcf85063
+    id: pcf85063_time
 
 # Enable logging
 logger:
@@ -108,35 +108,28 @@ globals:
 - id: pos1
   type: int
   restore_value: yes
-
 - id: pos2
   type: int
   restore_value: yes
-
 - id: pos3
   type: int
   restore_value: yes
-
 - id: pos4
   type: int
   restore_value: yes
-
 
 - id: max1
   type: int
   restore_value: yes
   initial_value: '10000'
-
 - id: max2
   type: int
   restore_value: yes
   initial_value: '10000'
-
 - id: max3
   type: int
   restore_value: yes
   initial_value: '10000'
-
 - id: max4
   type: int
   restore_value: yes
@@ -145,13 +138,10 @@ globals:
 
 - id: dir1
   type: int
-
 - id: dir2
   type: int
-
 - id: dir3
   type: int
-
 - id: dir4
   type: int
 
@@ -162,51 +152,26 @@ globals:
 # ======================
 
 sensor:
-
+# Rolluik 1
   - platform: ina219
     address: 0x40
     shunt_resistance: 0.1 ohm
+    update_interval: 100ms
     current:
       name: "Rolluik 1 Stroom"
       id: current1
+      on_value_range:
+        - above: 1.9
+          then:
+            - if:
+                condition:
+                  lambda: 'return (id(r1_up).state || id(r1_down).state) && !id(hr1).state;'
+                then:
+                  - cover.stop: rolluik_1
+                  - logger.log: "STALL Rolluik 1 gedetecteerd!"
     power:
       name: "Rolluik 1 Vermogen"
       id: power1
-
-  - platform: ina219
-    address: 0x41
-    shunt_resistance: 0.1 ohm
-    current:
-      name: "Rolluik 2 Stroom"
-      id: current2
-    power:
-      name: "Rolluik 2 Vermogen"
-      id: power2
-
-  - platform: ina219
-    address: 0x44
-    shunt_resistance: 0.1 ohm
-    current:
-      name: "Rolluik 3 Stroom"
-      id: current3
-    power:
-      name: "Rolluik 3 Vermogen"
-      id: power3
-
-  - platform: ina219
-    address: 0x45
-    shunt_resistance: 0.1 ohm
-    current:
-      name: "Rolluik 4 Stroom"
-      id: current4
-    power:
-      name: "Rolluik 4 Vermogen"
-      id: power4
-
-
-# ======================
-# ENCODERS
-# ======================
 
   - platform: pulse_counter
     pin: GPIO1
@@ -215,39 +180,112 @@ sensor:
     update_interval: 100ms
     internal: true
     on_value:
-      lambda: |-
-        if(id(dir1)==1) id(pos1)++;
-        if(id(dir1)==-1) id(pos1)--;
+      then:
+        - lambda: |-
+            if(id(r1_up).state) id(pos1) += (int)x;
+            if(id(r1_down).state) id(pos1) -= (int)x;
+
+
+# Rolluik 2
+  - platform: ina219
+    address: 0x41
+    shunt_resistance: 0.1 ohm
+    update_interval: 100ms
+    current:
+      name: "Rolluik 2 Stroom"
+      id: current2
+      on_value_range:
+        - above: 1.9
+          then:
+            - if:
+                condition:
+                  lambda: 'return (id(r2_up).state || id(r2_down).state) && !id(hr2).state;'
+                then:
+                  - cover.stop: rolluik_2
+                  - logger.log: "STALL Rolluik 2 gedetecteerd!"
+    power:
+      name: "Rolluik 2 Vermogen"
+      id: power2
 
   - platform: pulse_counter
     pin: GPIO2
     name: "Rolluik 2 Encoder"
     id: enc2
+    update_interval: 100ms
     internal: true
     on_value:
-      lambda: |-
-        if(id(dir2)==1) id(pos2)++;
-        if(id(dir2)==-1) id(pos2)--;
+      then:
+        - lambda: |-
+            if(id(r2_up).state) id(pos2) += (int)x;
+            if(id(r2_down).state) id(pos2) -= (int)x;
+
+
+# Rolluik 3
+  - platform: ina219
+    address: 0x44
+    shunt_resistance: 0.1 ohm
+    update_interval: 100ms
+    current:
+      name: "Rolluik 3 Stroom"
+      id: current3
+      on_value_range:
+        - above: 1.9
+          then:
+            - if:
+                condition:
+                  lambda: 'return (id(r3_up).state || id(r3_down).state) && !id(hr3).state;'
+                then:
+                  - cover.stop: rolluik_3
+                  - logger.log: "STALL Rolluik 3 gedetecteerd!"
+    power:
+      name: "Rolluik 3 Vermogen"
+      id: power3
 
   - platform: pulse_counter
     pin: GPIO3
     name: "Rolluik 3 Encoder"
     id: enc3
+    update_interval: 100ms
     internal: true
     on_value:
-      lambda: |-
-        if(id(dir3)==1) id(pos3)++;
-        if(id(dir3)==-1) id(pos3)--;
+      then:
+        - lambda: |-
+            if(id(r3_up).state) id(pos3) += (int)x;
+            if(id(r3_down).state) id(pos3) -= (int)x;
+
+
+# Rolluik 4
+  - platform: ina219
+    address: 0x45
+    shunt_resistance: 0.1 ohm
+    update_interval: 100ms
+    current:
+      name: "Rolluik 4 Stroom"
+      id: current4
+      on_value_range:
+        - above: 1.9
+          then:
+            - if:
+                condition:
+                  lambda: 'return (id(r4_up).state || id(r4_down).state) && !id(hr4).state;'
+                then:
+                  - cover.stop: rolluik_4
+                  - logger.log: "STALL Rolluik 4 gedetecteerd!"
+    power:
+      name: "Rolluik 4 Vermogen"
+      id: power4
 
   - platform: pulse_counter
     pin: GPIO4
     name: "Rolluik 4 Encoder"
     id: enc4
+    update_interval: 100ms
     internal: true
     on_value:
-      lambda: |-
-        if(id(dir4)==1) id(pos4)++;
-        if(id(dir4)==-1) id(pos4)--;
+      then:
+        - lambda: |-
+            if(id(r4_up).state) id(pos4) += (int)x;
+            if(id(r4_down).state) id(pos4) -= (int)x;
 
 
 
@@ -256,54 +294,53 @@ sensor:
 # ======================
 
 switch:
-
   - platform: gpio
-    pin:
-      pca9554: TCA9554_hub
-      number: 0
+    pin: { pca9554: TCA9554_hub, number: 0 }
     id: r1_up
+    interlock: [r1_down]
+    restore_mode: ALWAYS_OFF
 
   - platform: gpio
-    pin:
-      pca9554: TCA9554_hub
-      number: 1
+    pin: { pca9554: TCA9554_hub, number: 1 }
     id: r1_down
+    interlock: [r1_up]
+    restore_mode: ALWAYS_OFF
 
   - platform: gpio
-    pin:
-      pca9554: TCA9554_hub
-      number: 2
+    pin: { pca9554: TCA9554_hub, number: 2 }
     id: r2_up
+    interlock: [r2_down]
+    restore_mode: ALWAYS_OFF
 
   - platform: gpio
-    pin:
-      pca9554: TCA9554_hub
-      number: 3
+    pin: { pca9554: TCA9554_hub, number: 3 }
     id: r2_down
+    interlock: [r2_up]
+    restore_mode: ALWAYS_OFF
 
   - platform: gpio
-    pin:
-      pca9554: TCA9554_hub
-      number: 4
+    pin: { pca9554: TCA9554_hub, number: 4 }
     id: r3_up
+    interlock: [r3_down]
+    restore_mode: ALWAYS_OFF
 
   - platform: gpio
-    pin:
-      pca9554: TCA9554_hub
-      number: 5
+    pin: { pca9554: TCA9554_hub, number: 5 }
     id: r3_down
+    interlock: [r3_up]
+    restore_mode: ALWAYS_OFF
 
   - platform: gpio
-    pin:
-      pca9554: TCA9554_hub
-      number: 6
+    pin: { pca9554: TCA9554_hub, number: 6 }
     id: r4_up
+    interlock: [r4_down]
+    restore_mode: ALWAYS_OFF
 
   - platform: gpio
-    pin:
-      pca9554: TCA9554_hub
-      number: 7
+    pin: { pca9554: TCA9554_hub, number: 7 }
     id: r4_down
+    interlock: [r4_up]
+    restore_mode: ALWAYS_OFF
 
 
 # ======================
@@ -315,15 +352,12 @@ cover:
   - platform: template
     name: "Rolluik 1"
     id: rolluik_1
-    lambda: |-
-      return (float)id(pos1)/id(max1);
+    lambda: 'return (float)id(pos1)/id(max1);'
     open_action:
       - lambda: id(dir1)=1;
-      - switch.turn_off: r1_down
       - switch.turn_on: r1_up
     close_action:
       - lambda: id(dir1)=-1;
-      - switch.turn_off: r1_up
       - switch.turn_on: r1_down
     stop_action:
       - lambda: id(dir1)=0;
@@ -334,15 +368,12 @@ cover:
   - platform: template
     name: "Rolluik 2"
     id: rolluik_2
-    lambda: |-
-      return (float)id(pos2)/id(max2);
+    lambda: 'return (float)id(pos2)/id(max2);'
     open_action:
       - lambda: id(dir2)=1;
-      - switch.turn_off: r2_down
       - switch.turn_on: r2_up
     close_action:
       - lambda: id(dir2)=-1;
-      - switch.turn_off: r2_up
       - switch.turn_on: r2_down
     stop_action:
       - lambda: id(dir2)=0;
@@ -354,8 +385,7 @@ cover:
   - platform: template
     name: "Rolluik 3"
     id: rolluik_3
-    lambda: |-
-      return (float)id(pos3)/id(max3);
+    lambda: 'return (float)id(pos3)/id(max3);'
     open_action:
       - lambda: id(dir3)=1;
       - switch.turn_off: r3_down
@@ -374,15 +404,12 @@ cover:
   - platform: template
     name: "Rolluik 4"
     id: rolluik_4
-    lambda: |-
-      return (float)id(pos4)/id(max4);
+    lambda: 'return (float)id(pos4)/id(max4);'
     open_action:
       - lambda: id(dir4)=1;
-      - switch.turn_off: r4_down
       - switch.turn_on: r4_up
     close_action:
       - lambda: id(dir4)=-1;
-      - switch.turn_off: r4_up
       - switch.turn_on: r4_down
     stop_action:
       - lambda: id(dir4)=0;
@@ -402,60 +429,89 @@ button:
     id: hr1
     on_press:
       - cover.open: rolluik_1
+      - delay: 800ms
       - wait_until:
-          lambda: return id(current1).state > 1.5;
+          condition:
+            lambda: 'return id(current1).state > 1.5;'
+          timeout: 45s
       - cover.stop: rolluik_1
       - lambda: id(pos1)=0;
+      - delay: 1s
       - cover.close: rolluik_1
+      - delay: 800ms
       - wait_until:
-          lambda: return id(current1).state > 1.5;
+          condition:
+            lambda: 'return id(current1).state > 1.5;'
+          timeout: 45s
       - cover.stop: rolluik_1
-      - lambda: id(max1)=id(pos1);
+      - lambda: 'id(max1) = abs(id(pos1));'
 
   - platform: template
     name: "Home Rolluik 2"
     id: hr2
     on_press:
       - cover.open: rolluik_2
+      - delay: 800ms
       - wait_until:
-          lambda: return id(current2).state > 1.5;
+          condition:
+            lambda: 'return id(current2).state > 1.5;'
+          timeout: 45s
       - cover.stop: rolluik_2
       - lambda: id(pos2)=0;
+      - delay: 1s
       - cover.close: rolluik_2
+      - delay: 800ms
       - wait_until:
-          lambda: return id(current2).state > 1.5;
+          condition:
+            lambda: 'return id(current2).state > 1.5;'
+          timeout: 45s
       - cover.stop: rolluik_2
-      - lambda: id(max2)=id(pos2);
+      - lambda: 'id(max2) = abs(id(pos2));'
 
   - platform: template
     name: "Home Rolluik 3"
     id: hr3
     on_press:
       - cover.open: rolluik_3
+      - delay: 800ms
       - wait_until:
-          lambda: return id(current3).state > 1.5;
+          condition:
+            lambda: 'return id(current3).state > 1.5;'
+          timeout: 45s
       - cover.stop: rolluik_3
       - lambda: id(pos3)=0;
+      - delay: 1s
       - cover.close: rolluik_3
+      - delay: 800ms
       - wait_until:
-          lambda: return id(current3).state > 1.5;
+          condition:
+            lambda: 'return id(current3).state > 1.5;'
+          timeout: 45s
       - cover.stop: rolluik_3
-      - lambda: id(max3)=id(pos3);
+      - lambda: 'id(max3) = abs(id(pos3));'
 
   - platform: template
     name: "Home Rolluik 4"
     id: hr4
     on_press:
       - cover.open: rolluik_4
+      - delay: 800ms
       - wait_until:
-          lambda: return id(current4).state > 1.5;
+          condition:
+            lambda: 'return id(current4).state > 1.5;'
+          timeout: 45s
       - cover.stop: rolluik_4
       - lambda: id(pos4)=0;
+      - delay: 1s
       - cover.close: rolluik_4
+      - delay: 800ms
       - wait_until:
-          lambda: return id(current4).state > 1.5;
+          condition:
+            lambda: 'return id(current4).state > 1.5;'
+          timeout: 45s
       - cover.stop: rolluik_4
-      - lambda: id(max4)=id(pos4);
+      - lambda: 'id(max4) = abs(id(pos4));'
+
 
 interval:
 - interval: 200ms

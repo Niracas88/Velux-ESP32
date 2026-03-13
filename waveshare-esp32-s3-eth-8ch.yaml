@@ -171,7 +171,7 @@ sensor:
       id: power1
 
   - platform: pulse_counter
-    pin: GPIO1
+    pin: GPIO4
     id: enc1
     update_interval: 100ms
     internal: true
@@ -180,7 +180,7 @@ sensor:
         - lambda: |-
             if(id(dir1) == 1) id(enc1_abs) += (int)x;
             else if(id(dir1) == -1) id(enc1_abs) -= (int)x;
-            id(pos1) = id(enc1_abs);
+            if(id(dir1) != 0) id(pos1) = id(enc1_abs);
 
 # Rolluik 2
   - platform: ina219
@@ -195,7 +195,7 @@ sensor:
       id: power2
 
   - platform: pulse_counter
-    pin: GPIO2
+    pin: GPIO5
     id: enc2
     update_interval: 100ms
     internal: true
@@ -204,11 +204,11 @@ sensor:
         - lambda: |-
             if(id(dir2) == 1) id(enc2_abs) += (int)x;
             else if(id(dir2) == -1) id(enc2_abs) -= (int)x;
-            id(pos2) = id(enc2_abs);
+            if(id(dir2) != 0) id(pos2) = id(enc2_abs);
 
 # Rolluik 3
   - platform: ina219
-    address: 0x44
+    address: 0x42
     shunt_resistance: 0.1
     update_interval: 100ms
     current:
@@ -219,7 +219,7 @@ sensor:
       id: power3
 
   - platform: pulse_counter
-    pin: GPIO3
+    pin: GPIO6
     id: enc3
     update_interval: 100ms
     internal: true
@@ -228,11 +228,11 @@ sensor:
         - lambda: |-
             if(id(dir3) == 1) id(enc3_abs) += (int)x;
             else if(id(dir3) == -1) id(enc3_abs) -= (int)x;
-            id(pos3) = id(enc3_abs);
+            if(id(dir3) != 0) id(pos3) = id(enc3_abs);
 
 # Rolluik 4
   - platform: ina219
-    address: 0x45
+    address: 0x43
     shunt_resistance: 0.1
     update_interval: 100ms
     current:
@@ -243,7 +243,7 @@ sensor:
       id: power4
 
   - platform: pulse_counter
-    pin: GPIO4
+    pin: GPIO7
     id: enc4
     update_interval: 100ms
     internal: true
@@ -252,7 +252,7 @@ sensor:
         - lambda: |-
             if(id(dir4) == 1) id(enc4_abs) += (int)x;
             else if(id(dir4) == -1) id(enc4_abs) -= (int)x;
-            id(pos4) = id(enc4_abs);
+            if(id(dir4) != 0) id(pos4) = id(enc4_abs);
 
 
 
@@ -324,21 +324,27 @@ cover:
     optimistic: false
     position_action:
       - lambda: |-
-          int target = pos * id(max1);
+          int target = (int)(pos * id(max1));
           if (target > id(pos1)) {
             id(rolluik_1).open();
           } else if (target < id(pos1)) {
             id(rolluik_1).close();
+          } else {
+            id(rolluik_1).stop();
           }
     open_action:
       - lambda: |-
-          id(dir1) = 1; 
+          id(dir1) = 1;
           id(start_time1) = millis();
+      - switch.turn_off: r1_down
+      - delay: 400ms
       - switch.turn_on: r1_up
     close_action:
       - lambda: |-
-          id(dir1) = -1; 
+          id(dir1) = -1;
           id(start_time1) = millis();
+      - switch.turn_off: r1_up
+      - delay: 400ms
       - switch.turn_on: r1_down
     stop_action:
       - lambda: id(dir1) = 0;
@@ -354,21 +360,27 @@ cover:
     optimistic: false
     position_action:
       - lambda: |-
-          int target = pos * id(max2);
+          int target = (int)(pos * id(max2));
           if (target > id(pos2)) {
             id(rolluik_2).open();
           } else if (target < id(pos2)) {
             id(rolluik_2).close();
+          } else {
+            id(rolluik_2).stop();
           }
     open_action:
       - lambda: |-
-          id(dir2) = 1; 
+          id(dir2) = 1;
           id(start_time2) = millis();
+      - switch.turn_off: r2_down
+      - delay: 400ms
       - switch.turn_on: r2_up
     close_action:
       - lambda: |-
-          id(dir2) = -1; 
+          id(dir2) = -1;
           id(start_time2) = millis();
+      - switch.turn_off: r2_up
+      - delay: 400ms
       - switch.turn_on: r2_down
     stop_action:
       - lambda: id(dir2) = 0;
@@ -384,21 +396,27 @@ cover:
     optimistic: false
     position_action:
       - lambda: |-
-          int target = pos * id(max3);
+          int target = (int)(pos * id(max3));
           if (target > id(pos3)) {
             id(rolluik_3).open();
           } else if (target < id(pos3)) {
             id(rolluik_3).close();
+          } else {
+            id(rolluik_3).stop();
           }
     open_action:
       - lambda: |-
-          id(dir3) = 1; 
+          id(dir3) = 1;
           id(start_time3) = millis();
+      - switch.turn_off: r3_down
+      - delay: 400ms
       - switch.turn_on: r3_up
     close_action:
       - lambda: |-
-          id(dir3) = -1; 
+          id(dir3) = -1;
           id(start_time3) = millis();
+      - switch.turn_off: r3_up
+      - delay: 400ms
       - switch.turn_on: r3_down
     stop_action:
       - lambda: id(dir3) = 0;
@@ -414,21 +432,27 @@ cover:
     optimistic: false
     position_action:
       - lambda: |-
-          int target = pos * id(max4);
+          int target = (int)(pos * id(max4));
           if (target > id(pos4)) {
             id(rolluik_4).open();
           } else if (target < id(pos4)) {
             id(rolluik_4).close();
+          } else {
+            id(rolluik_4).stop();
           }
     open_action:
       - lambda: |-
-          id(dir4) = 1; 
+          id(dir4) = 1;
           id(start_time4) = millis();
+      - switch.turn_off: r4_down
+      - delay: 400ms
       - switch.turn_on: r4_up
     close_action:
       - lambda: |-
-          id(dir4) = -1; 
+          id(dir4) = -1;
           id(start_time4) = millis();
+      - switch.turn_off: r4_up
+      - delay: 400ms
       - switch.turn_on: r4_down
     stop_action:
       - lambda: id(dir4) = 0;
@@ -445,196 +469,254 @@ button:
     name: "Home Rolluik 1"
     id: hr1
     on_press:
-      - lambda: 'id(is_homing1) = true;'
-      - cover.open: rolluik_1
-      - delay: 1s # Wachten tot inrush current voorbij is
-      - wait_until:
+      - if:
           condition:
-            lambda: 'return id(current1).state > 1.5;'
-          timeout: 45s
-      - cover.stop: rolluik_1
-      - lambda: |-
-          id(pos1) = 0;
-          id(enc1_abs) = 0;
-      - delay: 1s
-      - cover.close: rolluik_1
-      - delay: 1s
-      - wait_until:
-          condition:
-            lambda: 'return id(current1).state > 1.5;'
-          timeout: 45s
-      - cover.stop: rolluik_1
-      - lambda: |-
-          id(max1) = abs(id(pos1));
-          id(is_homing1) = false;
-      - logger.log: "Homing Rolluik 1 voltooid"
+            lambda: 'return !id(is_homing1) && !id(is_homing2) && !id(is_homing3) && !id(is_homing4);'
+          then:
+            - lambda: 'id(is_homing1) = true;'
+            - cover.open: rolluik_1
+            - delay: 1s # Wachten tot inrush current voorbij is
+            - wait_until:
+                condition:
+                  lambda: 'return id(current1).state > 1.5;'
+                timeout: 45s
+            - cover.stop: rolluik_1
+            - lambda: |-
+                id(pos1) = 0;
+                id(enc1_abs) = 0;
+            - delay: 1s
+            - cover.close: rolluik_1
+            - delay: 1s
+            - wait_until:
+                condition:
+                  lambda: 'return id(current1).state > 1.5;'
+                timeout: 45s
+            - delay: 100ms
+            - cover.stop: rolluik_1
+            - lambda: |-
+                id(max1) = abs(id(pos1));
+                id(is_homing1) = false;
+            - logger.log: "Homing Rolluik 1 voltooid"
+          else:
+            - logger.log: "Homing already in progress"
 
   - platform: template
     name: "Home Rolluik 2"
     id: hr2
     on_press:
-      - lambda: 'id(is_homing2) = true;'
-      - cover.open: rolluik_2
-      - delay: 1s
-      - wait_until:
+      - if:
           condition:
-            lambda: 'return id(current2).state > 1.5;'
-          timeout: 45s
-      - cover.stop: rolluik_2
-      - lambda: |-
-          id(pos2) = 0;
-          id(enc2_abs) = 0;
-      - delay: 1s
-      - cover.close: rolluik_2
-      - delay: 1s
-      - wait_until:
-          condition:
-            lambda: 'return id(current2).state > 1.5;'
-          timeout: 45s
-      - cover.stop: rolluik_2
-      - lambda: |-
-          id(max2) = abs(id(pos2));
-          id(is_homing2) = false;
-      - logger.log: "Homing Rolluik 2 voltooid"
+            lambda: 'return !id(is_homing1) && !id(is_homing2) && !id(is_homing3) && !id(is_homing4);'
+          then:
+            - lambda: 'id(is_homing2) = true;'
+            - cover.open: rolluik_2
+            - delay: 1s # Wachten tot inrush current voorbij is
+            - wait_until:
+                condition:
+                  lambda: 'return id(current2).state > 1.5;'
+                timeout: 45s
+            - cover.stop: rolluik_2
+            - lambda: |-
+                id(pos2) = 0;
+                id(enc2_abs) = 0;
+            - delay: 1s
+            - cover.close: rolluik_2
+            - delay: 1s
+            - wait_until:
+                condition:
+                  lambda: 'return id(current2).state > 1.5;'
+                timeout: 45s
+            - delay: 100ms
+            - cover.stop: rolluik_2
+            - lambda: |-
+                id(max2) = abs(id(pos2));
+                id(is_homing2) = false;
+            - logger.log: "Homing Rolluik 2 voltooid"
+          else:
+            - logger.log: "Homing already in progress"
 
   - platform: template
     name: "Home Rolluik 3"
     id: hr3
     on_press:
-      - lambda: 'id(is_homing3) = true;'
-      - cover.open: rolluik_3
-      - delay: 1s
-      - wait_until:
+      - if:
           condition:
-            lambda: 'return id(current3).state > 1.5;'
-          timeout: 45s
-      - cover.stop: rolluik_3
-      - lambda: |-
-          id(pos3) = 0;
-          id(enc3_abs) = 0;
-      - delay: 1s
-      - cover.close: rolluik_3
-      - delay: 1s
-      - wait_until:
-          condition:
-            lambda: 'return id(current3).state > 1.5;'
-          timeout: 45s
-      - cover.stop: rolluik_3
-      - lambda: |-
-          id(max3) = abs(id(pos3));
-          id(is_homing3) = false;
-      - logger.log: "Homing Rolluik 3 voltooid"
+            lambda: 'return !id(is_homing1) && !id(is_homing2) && !id(is_homing3) && !id(is_homing4);'
+          then:
+            - lambda: 'id(is_homing3) = true;'
+            - cover.open: rolluik_3
+            - delay: 1s # Wachten tot inrush current voorbij is
+            - wait_until:
+                condition:
+                  lambda: 'return id(current3).state > 1.5;'
+                timeout: 45s
+            - cover.stop: rolluik_3
+            - lambda: |-
+                id(pos3) = 0;
+                id(enc3_abs) = 0;
+            - delay: 1s
+            - cover.close: rolluik_3
+            - delay: 1s
+            - wait_until:
+                condition:
+                  lambda: 'return id(current3).state > 1.5;'
+                timeout: 45s
+            - delay: 100ms
+            - cover.stop: rolluik_3
+            - lambda: |-
+                id(max3) = abs(id(pos3));
+                id(is_homing3) = false;
+            - logger.log: "Homing Rolluik 3 voltooid"
+          else:
+            - logger.log: "Homing already in progress"
 
   - platform: template
     name: "Home Rolluik 4"
     id: hr4
     on_press:
-      - lambda: 'id(is_homing4) = true;'
-      - cover.open: rolluik_4
-      - delay: 1s
-      - wait_until:
+      - if:
           condition:
-            lambda: 'return id(current4).state > 1.5;'
-          timeout: 45s
-      - cover.stop: rolluik_4
-      - lambda: |-
-          id(pos4) = 0;
-          id(enc4_abs) = 0;
-      - delay: 1s
-      - cover.close: rolluik_4
-      - delay: 1s
-      - wait_until:
-          condition:
-            lambda: 'return id(current4).state > 1.5;'
-          timeout: 45s
-      - cover.stop: rolluik_4
-      - lambda: |-
-          id(max4) = abs(id(pos4));
-          id(is_homing4) = false;
-      - logger.log: "Homing Rolluik 4 voltooid"
+            lambda: 'return !id(is_homing1) && !id(is_homing2) && !id(is_homing3) && !id(is_homing4);'
+          then:
+            - lambda: 'id(is_homing4) = true;'
+            - cover.open: rolluik_4
+            - delay: 1s # Wachten tot inrush current voorbij is
+            - wait_until:
+                condition:
+                  lambda: 'return id(current4).state > 1.5;'
+                timeout: 45s
+            - cover.stop: rolluik_4
+            - lambda: |-
+                id(pos4) = 0;
+                id(enc4_abs) = 0;
+            - delay: 1s
+            - cover.close: rolluik_4
+            - delay: 1s
+            - wait_until:
+                condition:
+                  lambda: 'return id(current4).state > 1.5;'
+                timeout: 45s
+            - delay: 100ms
+            - cover.stop: rolluik_4
+            - lambda: |-
+                id(max4) = abs(id(pos4));
+                id(is_homing4) = false;
+            - logger.log: "Homing Rolluik 4 voltooid"
+          else:
+            - logger.log: "Homing already in progress"
 
+
+
+# ======================
+# INTERVAL CHECK LOOPTIJD & VEILIGHEID
+# ======================
 
 interval:
   - interval: 200ms
     then:
       - lambda: |-
-          const uint32_t MAX_TIME = 45000; // 45 seconden maximale looptijd
+          const uint32_t MAX_TIME = 45000;
 
           // --- ROLLUIK 1 LOGICA ---
           if (id(dir1) != 0) {
-            // 1. Slider stop-logica (Check of doelpositie bereikt is)
-            if (id(max1) > 0 && id(rolluik_1).position.has_value()) {
-              float target = id(rolluik_1).position.value();
-              float current = (float)id(pos1) / id(max1);
-              if (std::abs(current - target) < 0.01 || (id(dir1) == 1 && current > target) || (id(dir1) == -1 && current < target)) {
-                id(rolluik_1).stop();
+            // Check if target position reached
+            if (id(max1) > 0) {
+              float current_pos = (float)id(pos1) / id(max1);
+              // If position target is reached, stop
+              if ((id(dir1) == 1 && current_pos >= 0.99) || 
+                  (id(dir1) == -1 && current_pos <= 0.01)) {
+                id(dir1) = 0;
+                id(r1_up).turn_off();
+                id(r1_down).turn_off();
               }
             }
-            // 2. Veiligheid: Stroommeting (Stall) - Alleen als niet in homing-modus
+            // Stall detection (only if not homing)
             if (id(dir1) != 0 && id(current1).state > 1.8 && !id(is_homing1)) {
-              id(rolluik_1).stop();
+              id(dir1) = 0;
+              id(r1_up).turn_off();
+              id(r1_down).turn_off();
               ESP_LOGW("STALL", "Rolluik 1 gestopt op stroom");
             }
-            // 3. Veiligheid: Time-out (Failsafe)
-            else if (id(dir1) != 0 && (millis() - id(start_time1) > MAX_TIME)) {
-              id(rolluik_1).stop();
+            // Timeout check
+            if (id(dir1) != 0 && (millis() - id(start_time1) > MAX_TIME)) {
+              id(dir1) = 0;
+              id(r1_up).turn_off();
+              id(r1_down).turn_off();
               ESP_LOGE("TIMEOUT", "Rolluik 1 noodstop: tijd overschreden");
             }
           }
 
           // --- ROLLUIK 2 LOGICA ---
           if (id(dir2) != 0) {
-            if (id(max2) > 0 && id(rolluik_2).position.has_value()) {
-              float target = id(rolluik_2).position.value();
-              float current = (float)id(pos2) / id(max2);
-              if (std::abs(current - target) < 0.01 || (id(dir2) == 1 && current > target) || (id(dir2) == -1 && current < target)) {
-                id(rolluik_2).stop();
+            if (id(max2) > 0) {
+              float current_pos = (float)id(pos2) / id(max2);
+              if ((id(dir2) == 1 && current_pos >= 0.99) || 
+                  (id(dir2) == -1 && current_pos <= 0.01)) {
+                id(dir2) = 0;
+                id(r2_up).turn_off();
+                id(r2_down).turn_off();
               }
             }
             if (id(dir2) != 0 && id(current2).state > 1.8 && !id(is_homing2)) {
-              id(rolluik_2).stop();
+              id(dir2) = 0;
+              id(r2_up).turn_off();
+              id(r2_down).turn_off();
               ESP_LOGW("STALL", "Rolluik 2 gestopt op stroom");
             }
-            else if (id(dir2) != 0 && (millis() - id(start_time2) > MAX_TIME)) {
-              id(rolluik_2).stop();
+            if (id(dir2) != 0 && (millis() - id(start_time2) > MAX_TIME)) {
+              id(dir2) = 0;
+              id(r2_up).turn_off();
+              id(r2_down).turn_off();
               ESP_LOGE("TIMEOUT", "Rolluik 2 noodstop: tijd overschreden");
             }
           }
 
           // --- ROLLUIK 3 LOGICA ---
           if (id(dir3) != 0) {
-            if (id(max3) > 0 && id(rolluik_3).position.has_value()) {
-              float target = id(rolluik_3).position.value();
-              float current = (float)id(pos3) / id(max3);
-              if (std::abs(current - target) < 0.01 || (id(dir3) == 1 && current > target) || (id(dir3) == -1 && current < target)) {
-                id(rolluik_3).stop();
+            if (id(max3) > 0) {
+              float current_pos = (float)id(pos3) / id(max3);
+              if ((id(dir3) == 1 && current_pos >= 0.99) || 
+                  (id(dir3) == -1 && current_pos <= 0.01)) {
+                id(dir3) = 0;
+                id(r3_up).turn_off();
+                id(r3_down).turn_off();
               }
             }
             if (id(dir3) != 0 && id(current3).state > 1.8 && !id(is_homing3)) {
-              id(rolluik_3).stop();
+              id(dir3) = 0;
+              id(r3_up).turn_off();
+              id(r3_down).turn_off();
               ESP_LOGW("STALL", "Rolluik 3 gestopt op stroom");
             }
-            else if (id(dir3) != 0 && (millis() - id(start_time3) > MAX_TIME)) {
-              id(rolluik_3).stop();
+            if (id(dir3) != 0 && (millis() - id(start_time3) > MAX_TIME)) {
+              id(dir3) = 0;
+              id(r3_up).turn_off();
+              id(r3_down).turn_off();
               ESP_LOGE("TIMEOUT", "Rolluik 3 noodstop: tijd overschreden");
             }
           }
 
           // --- ROLLUIK 4 LOGICA ---
           if (id(dir4) != 0) {
-            if (id(max4) > 0 && id(rolluik_4).position.has_value()) {
-              float target = id(rolluik_4).position.value();
-              float current = (float)id(pos4) / id(max4);
-              if (std::abs(current - target) < 0.01 || (id(dir4) == 1 && current > target) || (id(dir4) == -1 && current < target)) {
-                id(rolluik_4).stop();
+            if (id(max4) > 0) {
+              float current_pos = (float)id(pos4) / id(max4);
+              if ((id(dir4) == 1 && current_pos >= 0.99) || 
+                  (id(dir4) == -1 && current_pos <= 0.01)) {
+                id(dir4) = 0;
+                id(r4_up).turn_off();
+                id(r4_down).turn_off();
               }
             }
             if (id(dir4) != 0 && id(current4).state > 1.8 && !id(is_homing4)) {
-              id(rolluik_4).stop();
+              id(dir4) = 0;
+              id(r4_up).turn_off();
+              id(r4_down).turn_off();
               ESP_LOGW("STALL", "Rolluik 4 gestopt op stroom");
             }
-            else if (id(dir4) != 0 && (millis() - id(start_time4) > MAX_TIME)) {
-              id(rolluik_4).stop();
+            if (id(dir4) != 0 && (millis() - id(start_time4) > MAX_TIME)) {
+              id(dir4) = 0;
+              id(r4_up).turn_off();
+              id(r4_down).turn_off();
               ESP_LOGE("TIMEOUT", "Rolluik 4 noodstop: tijd overschreden");
             }
           }

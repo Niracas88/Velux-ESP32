@@ -1,0 +1,640 @@
+substitutions:
+  device_name: "waveshare-relay-velux"
+  device_comment: "WaveShare ESP32-S3-POE-ETH-8DI-8RO"
+  device_friendly: "Velux Rolluiken"
+
+esphome:
+  name: ${device_name}
+  friendly_name: ${device_friendly}
+  min_version: 2025.5.0
+  comment: ${device_comment}
+  name_add_mac_suffix: false
+
+# Waveshare ESP32-S3-ETH-8DI-8RO uses ESP32-S3-WROOM-1U-N16R8
+# -> 16 MB flash
+# -> 8 MB psram
+esp32:
+  board: esp32s3box #esp32-s3-devkitc-1
+  flash_size: 16MB
+  framework:
+    type: arduino
+
+psram:
+  mode: octal
+  speed: 80MHz
+
+time:
+  - platform: homeassistant
+    id: homeassistant_time
+    on_time_sync:
+      then:
+        - pcf85063.write_time:
+  - platform: pcf85063
+    id: pcf85063_time
+
+# Enable logging
+logger:
+
+# Enable Home Assistant API
+api:
+  encryption:
+    key: !secret api_encryption_key
+
+# Allow Over-The-Air updates
+ota:
+  - platform: esphome
+    password: !secret ota_password
+
+ethernet:
+  type: W5500
+  clk_pin: GPIO15
+  mosi_pin: GPIO13
+  miso_pin: GPIO14
+  cs_pin: GPIO16
+  interrupt_pin: GPIO12
+
+web_server:
+  port: 80
+
+i2c:
+  sda: GPIO42
+  scl: GPIO41
+  scan: true
+  frequency: 400kHz
+  id: i2cbus
+
+pca9554:
+  - id: 'TCA9554_hub'
+    address: 0x20
+
+# ========================
+# GLOBALS
+# ========================
+
+globals:
+
+# positie
+  - id: pos1
+    type: int
+    restore_value: yes
+  - id: pos2
+    type: int
+    restore_value: yes
+  - id: pos3
+    type: int
+    restore_value: yes
+  - id: pos4
+    type: int
+    restore_value: yes
+
+# absolute encoder teller
+  - id: enc1_abs
+    type: int
+    restore_value: yes
+  - id: enc2_abs
+    type: int
+    restore_value: yes
+  - id: enc3_abs
+    type: int
+    restore_value: yes
+  - id: enc4_abs
+    type: int
+    restore_value: yes
+
+# max positie
+  - id: max1
+    type: int
+    restore_value: yes
+    initial_value: '10000'
+  - id: max2
+    type: int
+    restore_value: yes
+    initial_value: '10000'
+  - id: max3
+    type: int
+    restore_value: yes
+    initial_value: '10000'
+  - id: max4
+    type: int
+    restore_value: yes
+    initial_value: '10000'
+
+# richting
+  - id: dir1
+    type: int
+  - id: dir2
+    type: int
+  - id: dir3
+    type: int
+  - id: dir4
+    type: int
+
+# looptijd beveiliging
+  - id: start_time1
+    type: uint32_t
+  - id: start_time2
+    type: uint32_t
+  - id: start_time3
+    type: uint32_t
+  - id: start_time4
+    type: uint32_t
+
+# Homing status
+  - id: is_homing1
+    type: bool
+    initial_value: 'false'
+  - id: is_homing2
+    type: bool
+    initial_value: 'false'
+  - id: is_homing3
+    type: bool
+    initial_value: 'false'
+  - id: is_homing4
+    type: bool
+    initial_value: 'false'
+
+# ======================
+# INA219 + ENCODER SENSOREN
+# ======================
+
+sensor:
+# Rolluik 1
+  - platform: ina219
+    address: 0x40
+    shunt_resistance: 0.1
+    update_interval: 100ms
+    current:
+      name: "Rolluik 1 Stroom"
+      id: current1
+    power:
+      name: "Rolluik 1 Vermogen"
+      id: power1
+
+  - platform: pulse_counter
+    pin: GPIO1
+    id: enc1
+    update_interval: 100ms
+    internal: true
+    on_value:
+      then:
+        - lambda: |-
+            if(id(dir1) == 1) id(enc1_abs) += (int)x;
+            else if(id(dir1) == -1) id(enc1_abs) -= (int)x;
+            id(pos1) = id(enc1_abs);
+
+# Rolluik 2
+  - platform: ina219
+    address: 0x41
+    shunt_resistance: 0.1
+    update_interval: 100ms
+    current:
+      name: "Rolluik 2 Stroom"
+      id: current2
+    power:
+      name: "Rolluik 2 Vermogen"
+      id: power2
+
+  - platform: pulse_counter
+    pin: GPIO2
+    id: enc2
+    update_interval: 100ms
+    internal: true
+    on_value:
+      then:
+        - lambda: |-
+            if(id(dir2) == 1) id(enc2_abs) += (int)x;
+            else if(id(dir2) == -1) id(enc2_abs) -= (int)x;
+            id(pos2) = id(enc2_abs);
+
+# Rolluik 3
+  - platform: ina219
+    address: 0x44
+    shunt_resistance: 0.1
+    update_interval: 100ms
+    current:
+      name: "Rolluik 3 Stroom"
+      id: current3
+    power:
+      name: "Rolluik 3 Vermogen"
+      id: power3
+
+  - platform: pulse_counter
+    pin: GPIO3
+    id: enc3
+    update_interval: 100ms
+    internal: true
+    on_value:
+      then:
+        - lambda: |-
+            if(id(dir3) == 1) id(enc3_abs) += (int)x;
+            else if(id(dir3) == -1) id(enc3_abs) -= (int)x;
+            id(pos3) = id(enc3_abs);
+
+# Rolluik 4
+  - platform: ina219
+    address: 0x45
+    shunt_resistance: 0.1
+    update_interval: 100ms
+    current:
+      name: "Rolluik 4 Stroom"
+      id: current4
+    power:
+      name: "Rolluik 4 Vermogen"
+      id: power4
+
+  - platform: pulse_counter
+    pin: GPIO4
+    id: enc4
+    update_interval: 100ms
+    internal: true
+    on_value:
+      then:
+        - lambda: |-
+            if(id(dir4) == 1) id(enc4_abs) += (int)x;
+            else if(id(dir4) == -1) id(enc4_abs) -= (int)x;
+            id(pos4) = id(enc4_abs);
+
+
+
+# ======================
+# RELAYS
+# ======================
+
+switch:
+  - platform: gpio
+    pin: { pca9554: TCA9554_hub, number: 0 }
+    id: r1_up
+    interlock: [r1_down]
+    restore_mode: ALWAYS_OFF
+
+  - platform: gpio
+    pin: { pca9554: TCA9554_hub, number: 1 }
+    id: r1_down
+    interlock: [r1_up]
+    restore_mode: ALWAYS_OFF
+
+  - platform: gpio
+    pin: { pca9554: TCA9554_hub, number: 2 }
+    id: r2_up
+    interlock: [r2_down]
+    restore_mode: ALWAYS_OFF
+
+  - platform: gpio
+    pin: { pca9554: TCA9554_hub, number: 3 }
+    id: r2_down
+    interlock: [r2_up]
+    restore_mode: ALWAYS_OFF
+
+  - platform: gpio
+    pin: { pca9554: TCA9554_hub, number: 4 }
+    id: r3_up
+    interlock: [r3_down]
+    restore_mode: ALWAYS_OFF
+
+  - platform: gpio
+    pin: { pca9554: TCA9554_hub, number: 5 }
+    id: r3_down
+    interlock: [r3_up]
+    restore_mode: ALWAYS_OFF
+
+  - platform: gpio
+    pin: { pca9554: TCA9554_hub, number: 6 }
+    id: r4_up
+    interlock: [r4_down]
+    restore_mode: ALWAYS_OFF
+
+  - platform: gpio
+    pin: { pca9554: TCA9554_hub, number: 7 }
+    id: r4_down
+    interlock: [r4_up]
+    restore_mode: ALWAYS_OFF
+
+
+# ======================
+# COVER TEMPLATE
+# ======================
+
+cover:
+  - platform: template
+    name: "Rolluik 1"
+    id: rolluik_1
+    device_class: shutter
+    has_position: true
+    lambda: 'return (id(max1) > 0) ? (float)id(pos1) / id(max1) : 0.0;'
+    optimistic: false
+    position_action:
+      - lambda: |-
+          int target = pos * id(max1);
+          if (target > id(pos1)) {
+            id(rolluik_1).open();
+          } else if (target < id(pos1)) {
+            id(rolluik_1).close();
+          }
+    open_action:
+      - lambda: |-
+          id(dir1) = 1; 
+          id(start_time1) = millis();
+      - switch.turn_on: r1_up
+    close_action:
+      - lambda: |-
+          id(dir1) = -1; 
+          id(start_time1) = millis();
+      - switch.turn_on: r1_down
+    stop_action:
+      - lambda: id(dir1) = 0;
+      - switch.turn_off: r1_up
+      - switch.turn_off: r1_down
+
+  - platform: template
+    name: "Rolluik 2"
+    id: rolluik_2
+    device_class: shutter
+    has_position: true
+    lambda: 'return (id(max2) > 0) ? (float)id(pos2) / id(max2) : 0.0;'
+    optimistic: false
+    position_action:
+      - lambda: |-
+          int target = pos * id(max2);
+          if (target > id(pos2)) {
+            id(rolluik_2).open();
+          } else if (target < id(pos2)) {
+            id(rolluik_2).close();
+          }
+    open_action:
+      - lambda: |-
+          id(dir2) = 1; 
+          id(start_time2) = millis();
+      - switch.turn_on: r2_up
+    close_action:
+      - lambda: |-
+          id(dir2) = -1; 
+          id(start_time2) = millis();
+      - switch.turn_on: r2_down
+    stop_action:
+      - lambda: id(dir2) = 0;
+      - switch.turn_off: r2_up
+      - switch.turn_off: r2_down
+
+  - platform: template
+    name: "Rolluik 3"
+    id: rolluik_3
+    device_class: shutter
+    has_position: true
+    lambda: 'return (id(max3) > 0) ? (float)id(pos3) / id(max3) : 0.0;'
+    optimistic: false
+    position_action:
+      - lambda: |-
+          int target = pos * id(max3);
+          if (target > id(pos3)) {
+            id(rolluik_3).open();
+          } else if (target < id(pos3)) {
+            id(rolluik_3).close();
+          }
+    open_action:
+      - lambda: |-
+          id(dir3) = 1; 
+          id(start_time3) = millis();
+      - switch.turn_on: r3_up
+    close_action:
+      - lambda: |-
+          id(dir3) = -1; 
+          id(start_time3) = millis();
+      - switch.turn_on: r3_down
+    stop_action:
+      - lambda: id(dir3) = 0;
+      - switch.turn_off: r3_up
+      - switch.turn_off: r3_down
+
+  - platform: template
+    name: "Rolluik 4"
+    id: rolluik_4
+    device_class: shutter
+    has_position: true
+    lambda: 'return (id(max4) > 0) ? (float)id(pos4) / id(max4) : 0.0;'
+    optimistic: false
+    position_action:
+      - lambda: |-
+          int target = pos * id(max4);
+          if (target > id(pos4)) {
+            id(rolluik_4).open();
+          } else if (target < id(pos4)) {
+            id(rolluik_4).close();
+          }
+    open_action:
+      - lambda: |-
+          id(dir4) = 1; 
+          id(start_time4) = millis();
+      - switch.turn_on: r4_up
+    close_action:
+      - lambda: |-
+          id(dir4) = -1; 
+          id(start_time4) = millis();
+      - switch.turn_on: r4_down
+    stop_action:
+      - lambda: id(dir4) = 0;
+      - switch.turn_off: r4_up
+      - switch.turn_off: r4_down
+
+
+# ======================
+# HOMING BUTTONS
+# ======================
+
+button:
+  - platform: template
+    name: "Home Rolluik 1"
+    id: hr1
+    on_press:
+      - lambda: 'id(is_homing1) = true;'
+      - cover.open: rolluik_1
+      - delay: 1s # Wachten tot inrush current voorbij is
+      - wait_until:
+          condition:
+            lambda: 'return id(current1).state > 1.5;'
+          timeout: 45s
+      - cover.stop: rolluik_1
+      - lambda: |-
+          id(pos1) = 0;
+          id(enc1_abs) = 0;
+      - delay: 1s
+      - cover.close: rolluik_1
+      - delay: 1s
+      - wait_until:
+          condition:
+            lambda: 'return id(current1).state > 1.5;'
+          timeout: 45s
+      - cover.stop: rolluik_1
+      - lambda: |-
+          id(max1) = abs(id(pos1));
+          id(is_homing1) = false;
+      - logger.log: "Homing Rolluik 1 voltooid"
+
+  - platform: template
+    name: "Home Rolluik 2"
+    id: hr2
+    on_press:
+      - lambda: 'id(is_homing2) = true;'
+      - cover.open: rolluik_2
+      - delay: 1s
+      - wait_until:
+          condition:
+            lambda: 'return id(current2).state > 1.5;'
+          timeout: 45s
+      - cover.stop: rolluik_2
+      - lambda: |-
+          id(pos2) = 0;
+          id(enc2_abs) = 0;
+      - delay: 1s
+      - cover.close: rolluik_2
+      - delay: 1s
+      - wait_until:
+          condition:
+            lambda: 'return id(current2).state > 1.5;'
+          timeout: 45s
+      - cover.stop: rolluik_2
+      - lambda: |-
+          id(max2) = abs(id(pos2));
+          id(is_homing2) = false;
+      - logger.log: "Homing Rolluik 2 voltooid"
+
+  - platform: template
+    name: "Home Rolluik 3"
+    id: hr3
+    on_press:
+      - lambda: 'id(is_homing3) = true;'
+      - cover.open: rolluik_3
+      - delay: 1s
+      - wait_until:
+          condition:
+            lambda: 'return id(current3).state > 1.5;'
+          timeout: 45s
+      - cover.stop: rolluik_3
+      - lambda: |-
+          id(pos3) = 0;
+          id(enc3_abs) = 0;
+      - delay: 1s
+      - cover.close: rolluik_3
+      - delay: 1s
+      - wait_until:
+          condition:
+            lambda: 'return id(current3).state > 1.5;'
+          timeout: 45s
+      - cover.stop: rolluik_3
+      - lambda: |-
+          id(max3) = abs(id(pos3));
+          id(is_homing3) = false;
+      - logger.log: "Homing Rolluik 3 voltooid"
+
+  - platform: template
+    name: "Home Rolluik 4"
+    id: hr4
+    on_press:
+      - lambda: 'id(is_homing4) = true;'
+      - cover.open: rolluik_4
+      - delay: 1s
+      - wait_until:
+          condition:
+            lambda: 'return id(current4).state > 1.5;'
+          timeout: 45s
+      - cover.stop: rolluik_4
+      - lambda: |-
+          id(pos4) = 0;
+          id(enc4_abs) = 0;
+      - delay: 1s
+      - cover.close: rolluik_4
+      - delay: 1s
+      - wait_until:
+          condition:
+            lambda: 'return id(current4).state > 1.5;'
+          timeout: 45s
+      - cover.stop: rolluik_4
+      - lambda: |-
+          id(max4) = abs(id(pos4));
+          id(is_homing4) = false;
+      - logger.log: "Homing Rolluik 4 voltooid"
+
+
+interval:
+  - interval: 200ms
+    then:
+      - lambda: |-
+          const uint32_t MAX_TIME = 45000; // 45 seconden maximale looptijd
+
+          // --- ROLLUIK 1 LOGICA ---
+          if (id(dir1) != 0) {
+            // 1. Slider stop-logica (Check of doelpositie bereikt is)
+            if (id(max1) > 0 && id(rolluik_1).position.has_value()) {
+              float target = id(rolluik_1).position.value();
+              float current = (float)id(pos1) / id(max1);
+              if (std::abs(current - target) < 0.01 || (id(dir1) == 1 && current > target) || (id(dir1) == -1 && current < target)) {
+                id(rolluik_1).stop();
+              }
+            }
+            // 2. Veiligheid: Stroommeting (Stall) - Alleen als niet in homing-modus
+            if (id(dir1) != 0 && id(current1).state > 1.8 && !id(is_homing1)) {
+              id(rolluik_1).stop();
+              ESP_LOGW("STALL", "Rolluik 1 gestopt op stroom");
+            }
+            // 3. Veiligheid: Time-out (Failsafe)
+            else if (id(dir1) != 0 && (millis() - id(start_time1) > MAX_TIME)) {
+              id(rolluik_1).stop();
+              ESP_LOGE("TIMEOUT", "Rolluik 1 noodstop: tijd overschreden");
+            }
+          }
+
+          // --- ROLLUIK 2 LOGICA ---
+          if (id(dir2) != 0) {
+            if (id(max2) > 0 && id(rolluik_2).position.has_value()) {
+              float target = id(rolluik_2).position.value();
+              float current = (float)id(pos2) / id(max2);
+              if (std::abs(current - target) < 0.01 || (id(dir2) == 1 && current > target) || (id(dir2) == -1 && current < target)) {
+                id(rolluik_2).stop();
+              }
+            }
+            if (id(dir2) != 0 && id(current2).state > 1.8 && !id(is_homing2)) {
+              id(rolluik_2).stop();
+              ESP_LOGW("STALL", "Rolluik 2 gestopt op stroom");
+            }
+            else if (id(dir2) != 0 && (millis() - id(start_time2) > MAX_TIME)) {
+              id(rolluik_2).stop();
+              ESP_LOGE("TIMEOUT", "Rolluik 2 noodstop: tijd overschreden");
+            }
+          }
+
+          // --- ROLLUIK 3 LOGICA ---
+          if (id(dir3) != 0) {
+            if (id(max3) > 0 && id(rolluik_3).position.has_value()) {
+              float target = id(rolluik_3).position.value();
+              float current = (float)id(pos3) / id(max3);
+              if (std::abs(current - target) < 0.01 || (id(dir3) == 1 && current > target) || (id(dir3) == -1 && current < target)) {
+                id(rolluik_3).stop();
+              }
+            }
+            if (id(dir3) != 0 && id(current3).state > 1.8 && !id(is_homing3)) {
+              id(rolluik_3).stop();
+              ESP_LOGW("STALL", "Rolluik 3 gestopt op stroom");
+            }
+            else if (id(dir3) != 0 && (millis() - id(start_time3) > MAX_TIME)) {
+              id(rolluik_3).stop();
+              ESP_LOGE("TIMEOUT", "Rolluik 3 noodstop: tijd overschreden");
+            }
+          }
+
+          // --- ROLLUIK 4 LOGICA ---
+          if (id(dir4) != 0) {
+            if (id(max4) > 0 && id(rolluik_4).position.has_value()) {
+              float target = id(rolluik_4).position.value();
+              float current = (float)id(pos4) / id(max4);
+              if (std::abs(current - target) < 0.01 || (id(dir4) == 1 && current > target) || (id(dir4) == -1 && current < target)) {
+                id(rolluik_4).stop();
+              }
+            }
+            if (id(dir4) != 0 && id(current4).state > 1.8 && !id(is_homing4)) {
+              id(rolluik_4).stop();
+              ESP_LOGW("STALL", "Rolluik 4 gestopt op stroom");
+            }
+            else if (id(dir4) != 0 && (millis() - id(start_time4) > MAX_TIME)) {
+              id(rolluik_4).stop();
+              ESP_LOGE("TIMEOUT", "Rolluik 4 noodstop: tijd overschreden");
+            }
+          }

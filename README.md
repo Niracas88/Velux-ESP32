@@ -1,2 +1,2 @@
 # Velux-ESP32
-Move Velux roller shutters with relay board and esp32
+Control Velux SSL roller shutters with Waveshare-esp32-s3-eth-8ch relay board.

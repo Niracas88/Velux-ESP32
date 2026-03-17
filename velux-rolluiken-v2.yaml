@@ -10,11 +10,8 @@ esphome:
   comment: ${device_comment}
   name_add_mac_suffix: false
 
-# Waveshare ESP32-S3-ETH-8DI-8RO uses ESP32-S3-WROOM-1U-N16R8
-# -> 16 MB flash
-# -> 8 MB psram
 esp32:
-  board: esp32s3box #esp32-s3-devkitc-1
+  board: esp32s3box
   flash_size: 16MB
   framework:
     type: arduino
@@ -32,15 +29,12 @@ time:
   - platform: pcf85063
     id: pcf85063_time
 
-# Enable logging
 logger:
 
-# Enable Home Assistant API
 api:
   encryption:
     key: !secret api_encryption_key
 
-# Allow Over-The-Air updates
 ota:
   - platform: esphome
     password: !secret ota_password
@@ -60,20 +54,13 @@ i2c:
   sda: GPIO42
   scl: GPIO41
   scan: true
-  frequency: 400kHz
-  id: i2cbus
+  frequency: 100kHz
 
 pca9554:
-  - id: 'TCA9554a_hub'
+  - id: TCA9554_hub
     address: 0x20
 
-# ========================
-# GLOBALS
-# ========================
-
 globals:
-
-# positie
   - id: pos1
     type: int
     restore_value: yes
@@ -87,7 +74,6 @@ globals:
     type: int
     restore_value: yes
 
-# absolute encoder teller
   - id: enc1_abs
     type: int
     restore_value: yes
@@ -101,25 +87,23 @@ globals:
     type: int
     restore_value: yes
 
-# max positie
   - id: max1
     type: int
     restore_value: yes
-    initial_value: '10000'
+    initial_value: "10000"
   - id: max2
     type: int
     restore_value: yes
-    initial_value: '10000'
+    initial_value: "10000"
   - id: max3
     type: int
     restore_value: yes
-    initial_value: '10000'
+    initial_value: "10000"
   - id: max4
     type: int
     restore_value: yes
-    initial_value: '10000'
+    initial_value: "10000"
 
-# richting
   - id: dir1
     type: int
   - id: dir2
@@ -129,7 +113,6 @@ globals:
   - id: dir4
     type: int
 
-# looptijd beveiliging
   - id: start_time1
     type: uint32_t
   - id: start_time2
@@ -139,26 +122,20 @@ globals:
   - id: start_time4
     type: uint32_t
 
-# Homing status
   - id: is_homing1
     type: bool
-    initial_value: 'false'
+    initial_value: "false"
   - id: is_homing2
     type: bool
-    initial_value: 'false'
+    initial_value: "false"
   - id: is_homing3
     type: bool
-    initial_value: 'false'
+    initial_value: "false"
   - id: is_homing4
     type: bool
-    initial_value: 'false'
-
-# ======================
-# INA219 + ENCODER SENSOREN
-# ======================
+    initial_value: "false"
 
 sensor:
-# Rolluik 1
   - platform: ina219
     address: 0x40
     shunt_resistance: 0.1
@@ -175,14 +152,14 @@ sensor:
     id: enc1
     update_interval: 100ms
     internal: true
+    internal_filter: 13us
     on_value:
       then:
         - lambda: |-
-            if(id(dir1) == 1) id(enc1_abs) += (int)x;
-            else if(id(dir1) == -1) id(enc1_abs) -= (int)x;
-            if(id(dir1) != 0) id(pos1) = id(enc1_abs);
+            if (id(dir1) == 1) id(enc1_abs) += (int)x;
+            else if (id(dir1) == -1) id(enc1_abs) -= (int)x;
+            if (id(dir1) != 0) id(pos1) = id(enc1_abs);
 
-# Rolluik 2
   - platform: ina219
     address: 0x41
     shunt_resistance: 0.1
@@ -199,14 +176,14 @@ sensor:
     id: enc2
     update_interval: 100ms
     internal: true
+    internal_filter: 13us
     on_value:
       then:
         - lambda: |-
-            if(id(dir2) == 1) id(enc2_abs) += (int)x;
-            else if(id(dir2) == -1) id(enc2_abs) -= (int)x;
-            if(id(dir2) != 0) id(pos2) = id(enc2_abs);
+            if (id(dir2) == 1) id(enc2_abs) += (int)x;
+            else if (id(dir2) == -1) id(enc2_abs) -= (int)x;
+            if (id(dir2) != 0) id(pos2) = id(enc2_abs);
 
-# Rolluik 3
   - platform: ina219
     address: 0x44
     shunt_resistance: 0.1
@@ -223,14 +200,14 @@ sensor:
     id: enc3
     update_interval: 100ms
     internal: true
+    internal_filter: 13us
     on_value:
       then:
         - lambda: |-
-            if(id(dir3) == 1) id(enc3_abs) += (int)x;
-            else if(id(dir3) == -1) id(enc3_abs) -= (int)x;
-            if(id(dir3) != 0) id(pos3) = id(enc3_abs);
+            if (id(dir3) == 1) id(enc3_abs) += (int)x;
+            else if (id(dir3) == -1) id(enc3_abs) -= (int)x;
+            if (id(dir3) != 0) id(pos3) = id(enc3_abs);
 
-# Rolluik 4
   - platform: ina219
     address: 0x45
     shunt_resistance: 0.1
@@ -247,72 +224,80 @@ sensor:
     id: enc4
     update_interval: 100ms
     internal: true
+    internal_filter: 13us
     on_value:
       then:
         - lambda: |-
-            if(id(dir4) == 1) id(enc4_abs) += (int)x;
-            else if(id(dir4) == -1) id(enc4_abs) -= (int)x;
-            if(id(dir4) != 0) id(pos4) = id(enc4_abs);
-
-
-
-# ======================
-# RELAYS
-# ======================
+            if (id(dir4) == 1) id(enc4_abs) += (int)x;
+            else if (id(dir4) == -1) id(enc4_abs) -= (int)x;
+            if (id(dir4) != 0) id(pos4) = id(enc4_abs);
 
 switch:
   - platform: gpio
-    pin: { pca9554: TCA9554_hub, number: 0 }
+    pin:
+      pca9554: TCA9554_hub
+      number: 0
     id: r1_up
     interlock: [r1_down]
     restore_mode: ALWAYS_OFF
 
   - platform: gpio
-    pin: { pca9554: TCA9554_hub, number: 1 }
+    pin:
+      pca9554: TCA9554_hub
+      number: 1
     id: r1_down
     interlock: [r1_up]
     restore_mode: ALWAYS_OFF
 
   - platform: gpio
-    pin: { pca9554: TCA9554_hub, number: 2 }
+    pin:
+      pca9554: TCA9554_hub
+      number: 2
     id: r2_up
     interlock: [r2_down]
     restore_mode: ALWAYS_OFF
 
   - platform: gpio
-    pin: { pca9554: TCA9554_hub, number: 3 }
+    pin:
+      pca9554: TCA9554_hub
+      number: 3
     id: r2_down
     interlock: [r2_up]
     restore_mode: ALWAYS_OFF
 
   - platform: gpio
-    pin: { pca9554: TCA9554_hub, number: 4 }
+    pin:
+      pca9554: TCA9554_hub
+      number: 4
     id: r3_up
     interlock: [r3_down]
     restore_mode: ALWAYS_OFF
 
   - platform: gpio
-    pin: { pca9554: TCA9554_hub, number: 5 }
+    pin:
+      pca9554: TCA9554_hub
+      number: 5
     id: r3_down
     interlock: [r3_up]
     restore_mode: ALWAYS_OFF
 
   - platform: gpio
-    pin: { pca9554: TCA9554_hub, number: 6 }
+    pin:
+      pca9554: TCA9554_hub
+      number: 6
     id: r4_up
     interlock: [r4_down]
     restore_mode: ALWAYS_OFF
 
   - platform: gpio
-    pin: { pca9554: TCA9554_hub, number: 7 }
+    pin:
+      pca9554: TCA9554_hub
+      number: 7
     id: r4_down
     interlock: [r4_up]
     restore_mode: ALWAYS_OFF
 
-
-# ======================
-# COVER TEMPLATE
-# ======================
+# Covers section
 
 cover:
   - platform: template
@@ -326,11 +311,17 @@ cover:
       - lambda: |-
           int target = (int)(pos * id(max1));
           if (target > id(pos1)) {
-            id(rolluik_1).open();
+            auto call = id(rolluik_1).make_call();
+            call.set_command_open();
+            call.perform();
           } else if (target < id(pos1)) {
-            id(rolluik_1).close();
+            auto call = id(rolluik_1).make_call();
+            call.set_command_close();
+            call.perform();
           } else {
-            id(rolluik_1).stop();
+            auto call = id(rolluik_1).make_call();
+            call.set_command_stop();
+            call.perform();
           }
     open_action:
       - lambda: |-
@@ -362,11 +353,17 @@ cover:
       - lambda: |-
           int target = (int)(pos * id(max2));
           if (target > id(pos2)) {
-            id(rolluik_2).open();
+            auto call = id(rolluik_2).make_call();
+            call.set_command_open();
+            call.perform();
           } else if (target < id(pos2)) {
-            id(rolluik_2).close();
+            auto call = id(rolluik_2).make_call();
+            call.set_command_close();
+            call.perform();
           } else {
-            id(rolluik_2).stop();
+            auto call = id(rolluik_2).make_call();
+            call.set_command_stop();
+            call.perform();
           }
     open_action:
       - lambda: |-
@@ -398,11 +395,17 @@ cover:
       - lambda: |-
           int target = (int)(pos * id(max3));
           if (target > id(pos3)) {
-            id(rolluik_3).open();
+            auto call = id(rolluik_3).make_call();
+            call.set_command_open();
+            call.perform();
           } else if (target < id(pos3)) {
-            id(rolluik_3).close();
+            auto call = id(rolluik_3).make_call();
+            call.set_command_close();
+            call.perform();
           } else {
-            id(rolluik_3).stop();
+            auto call = id(rolluik_3).make_call();
+            call.set_command_stop();
+            call.perform();
           }
     open_action:
       - lambda: |-
@@ -434,11 +437,17 @@ cover:
       - lambda: |-
           int target = (int)(pos * id(max4));
           if (target > id(pos4)) {
-            id(rolluik_4).open();
+            auto call = id(rolluik_4).make_call();
+            call.set_command_open();
+            call.perform();
           } else if (target < id(pos4)) {
-            id(rolluik_4).close();
+            auto call = id(rolluik_4).make_call();
+            call.set_command_close();
+            call.perform();
           } else {
-            id(rolluik_4).stop();
+            auto call = id(rolluik_4).make_call();
+            call.set_command_stop();
+            call.perform();
           }
     open_action:
       - lambda: |-
@@ -459,10 +468,7 @@ cover:
       - switch.turn_off: r4_up
       - switch.turn_off: r4_down
 
-
-# ======================
-# HOMING BUTTONS
-# ======================
+# HOMING BUTTONS (full logic)
 
 button:
   - platform: template
@@ -473,9 +479,9 @@ button:
           condition:
             lambda: 'return !id(is_homing1) && !id(is_homing2) && !id(is_homing3) && !id(is_homing4);'
           then:
-            - lambda: 'id(is_homing1) = true;'
+            - lambda: 'id(is_homing1) = true; id(dir1)=1;'
             - cover.open: rolluik_1
-            - delay: 1s # Wachten tot inrush current voorbij is
+            - delay: 1s
             - wait_until:
                 condition:
                   lambda: 'return id(current1).state > 1.5;'
@@ -485,6 +491,7 @@ button:
                 id(pos1) = 0;
                 id(enc1_abs) = 0;
             - delay: 1s
+            - lambda: 'id(dir1)=-1;'
             - cover.close: rolluik_1
             - delay: 1s
             - wait_until:
@@ -497,8 +504,6 @@ button:
                 id(max1) = abs(id(pos1));
                 id(is_homing1) = false;
             - logger.log: "Homing Rolluik 1 voltooid"
-          else:
-            - logger.log: "Homing already in progress"
 
   - platform: template
     name: "Home Rolluik 2"
@@ -508,9 +513,9 @@ button:
           condition:
             lambda: 'return !id(is_homing1) && !id(is_homing2) && !id(is_homing3) && !id(is_homing4);'
           then:
-            - lambda: 'id(is_homing2) = true;'
+            - lambda: 'id(is_homing2) = true; id(dir2)=1;'
             - cover.open: rolluik_2
-            - delay: 1s # Wachten tot inrush current voorbij is
+            - delay: 1s
             - wait_until:
                 condition:
                   lambda: 'return id(current2).state > 1.5;'
@@ -520,6 +525,7 @@ button:
                 id(pos2) = 0;
                 id(enc2_abs) = 0;
             - delay: 1s
+            - lambda: 'id(dir2)=-1;'
             - cover.close: rolluik_2
             - delay: 1s
             - wait_until:
@@ -532,8 +538,6 @@ button:
                 id(max2) = abs(id(pos2));
                 id(is_homing2) = false;
             - logger.log: "Homing Rolluik 2 voltooid"
-          else:
-            - logger.log: "Homing already in progress"
 
   - platform: template
     name: "Home Rolluik 3"
@@ -543,9 +547,9 @@ button:
           condition:
             lambda: 'return !id(is_homing1) && !id(is_homing2) && !id(is_homing3) && !id(is_homing4);'
           then:
-            - lambda: 'id(is_homing3) = true;'
+            - lambda: 'id(is_homing3) = true; id(dir3)=1;'
             - cover.open: rolluik_3
-            - delay: 1s # Wachten tot inrush current voorbij is
+            - delay: 1s
             - wait_until:
                 condition:
                   lambda: 'return id(current3).state > 1.5;'
@@ -555,6 +559,7 @@ button:
                 id(pos3) = 0;
                 id(enc3_abs) = 0;
             - delay: 1s
+            - lambda: 'id(dir3)=-1;'
             - cover.close: rolluik_3
             - delay: 1s
             - wait_until:
@@ -567,8 +572,6 @@ button:
                 id(max3) = abs(id(pos3));
                 id(is_homing3) = false;
             - logger.log: "Homing Rolluik 3 voltooid"
-          else:
-            - logger.log: "Homing already in progress"
 
   - platform: template
     name: "Home Rolluik 4"
@@ -578,9 +581,9 @@ button:
           condition:
             lambda: 'return !id(is_homing1) && !id(is_homing2) && !id(is_homing3) && !id(is_homing4);'
           then:
-            - lambda: 'id(is_homing4) = true;'
+            - lambda: 'id(is_homing4) = true; id(dir4)=1;'
             - cover.open: rolluik_4
-            - delay: 1s # Wachten tot inrush current voorbij is
+            - delay: 1s
             - wait_until:
                 condition:
                   lambda: 'return id(current4).state > 1.5;'
@@ -590,6 +593,7 @@ button:
                 id(pos4) = 0;
                 id(enc4_abs) = 0;
             - delay: 1s
+            - lambda: 'id(dir4)=-1;'
             - cover.close: rolluik_4
             - delay: 1s
             - wait_until:
@@ -602,14 +606,8 @@ button:
                 id(max4) = abs(id(pos4));
                 id(is_homing4) = false;
             - logger.log: "Homing Rolluik 4 voltooid"
-          else:
-            - logger.log: "Homing already in progress"
 
-
-
-# ======================
-# INTERVAL CHECK LOOPTIJD & VEILIGHEID
-# ======================
+# Safety interval
 
 interval:
   - interval: 200ms

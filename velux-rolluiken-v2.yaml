@@ -28,7 +28,7 @@ time:
     id: homeassistant_time
     on_time_sync:
       then:
-        - pcf85063.write_time:
+        - pcf85063.write_time: {}
   - platform: pcf85063
     id: pcf85063_time
 
@@ -64,7 +64,7 @@ i2c:
   id: i2cbus
 
 pca9554:
-  - id: 'TCA9554_hub'
+  - id: 'TCA9554a_hub'
     address: 0x20
 
 # ========================
@@ -208,7 +208,7 @@ sensor:
 
 # Rolluik 3
   - platform: ina219
-    address: 0x42
+    address: 0x44
     shunt_resistance: 0.1
     update_interval: 100ms
     current:
@@ -232,7 +232,7 @@ sensor:
 
 # Rolluik 4
   - platform: ina219
-    address: 0x43
+    address: 0x45
     shunt_resistance: 0.1
     update_interval: 100ms
     current:

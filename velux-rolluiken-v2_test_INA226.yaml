@@ -1,0 +1,64 @@
+substitutions:
+  device_name: "test-ina226-velux"
+  device_friendly: "INA226 Test Rolluik"
+
+esphome:
+  name: ${device_name}
+  friendly_name: ${device_friendly}
+
+esp32:
+  board: esp32s3box
+  framework:
+    type: arduino
+
+i2c:
+  sda: GPIO42
+  scl: GPIO41
+  scan: true
+  frequency: 100kHz
+
+logger:
+  level: DEBUG # Zo zie je de I2C scan resultaten
+
+api:
+ota:
+
+# Gebruik de web_server om live de waarden te bekijken zonder HA
+web_server:
+  port: 80
+
+sensor:
+  - platform: ina226
+    address: 0x40
+    shunt_resistance: 0.1 ohm
+    current:
+      name: "Test Rolluik Stroom"
+      id: test_current
+      update_interval: 500ms
+    voltage:
+      name: "Test Rolluik Spanning"
+    power:
+      name: "Test Rolluik Vermogen"
+    update_interval: 500ms
+
+# Eenvoudige switches om de motor handmatig te bedienen tijdens het meten
+pca9554:
+  - id: TCA9554_hub
+    address: 0x20
+
+switch:
+  - platform: gpio
+    pin:
+      pca9554: TCA9554_hub
+      number: 0
+    name: "Relais Omhoog (R1)"
+    id: r1_up
+    interlock: [r1_down]
+
+  - platform: gpio
+    pin:
+      pca9554: TCA9554_hub
+      number: 1
+    name: "Relais Omlaag (R1)"
+    id: r1_down
+    interlock: [r1_up]

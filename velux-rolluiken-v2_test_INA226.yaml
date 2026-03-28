@@ -21,25 +21,55 @@ logger:
   level: DEBUG # Zo zie je de I2C scan resultaten
 
 api:
+  encryption:
+    key: !secret api_encryption_key
+
 ota:
+  - platform: esphome
+    password: !secret ota_password
 
 # Gebruik de web_server om live de waarden te bekijken zonder HA
 web_server:
   port: 80
 
+wifi:
+  ssid: !secret wifi_ssid
+  password: !secret wifi_password
+  use_address: 192.168.0.28
+
+globals:
+  - id: enc1_abs
+    type: int
+    restore_value: yes
+    initial_value: "0"
+
 sensor:
   - platform: ina226
     address: 0x40
     shunt_resistance: 0.1 ohm
+    update_interval: 100ms
     current:
       name: "Test Rolluik Stroom"
       id: test_current
-      update_interval: 500ms
-    voltage:
-      name: "Test Rolluik Spanning"
     power:
       name: "Test Rolluik Vermogen"
+
+  - platform: pulse_counter
+    pin:
+      number: GPIO4
+      mode: INPUT_PULLUP
+      inverted: true      # Velux encoders trekken vaak naar GND (Active Low)
+    id: enc1
+    name: "Rolluik 1 Pulsen per minuut"
     update_interval: 500ms
+    internal_filter: 13us
+    on_value:
+      then:
+        - lambda: |-
+            // Voor de test tellen we simpelweg op om te zien of de pulsen binnenkomen
+            id(enc1_abs) += (int)x;
+            ESP_LOGD("ENCODER", "Totaal aantal pulsen: %d", id(enc1_abs));
+
 
 # Eenvoudige switches om de motor handmatig te bedienen tijdens het meten
 pca9554:
@@ -62,3 +92,10 @@ switch:
     name: "Relais Omlaag (R1)"
     id: r1_down
     interlock: [r1_up]
+
+text_sensor:
+  - platform: template
+    name: "Rolluik 1 Totaal Pulsen"
+    lambda: |-
+      return str_sprintf("%d", id(enc1_abs));
+    update_interval: 1s

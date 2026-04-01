@@ -1,0 +1,392 @@
+substitutions:
+  device_name: "waveshare-relay-velux"
+  device_comment: "WaveShare ESP32-S3-POE-ETH-8DI-8RO"
+  device_friendly: "Velux Rolluiken"
+
+esphome:
+  name: ${device_name}
+  friendly_name: ${device_friendly}
+  min_version: 2025.5.0
+  comment: ${device_comment}
+  name_add_mac_suffix: false
+
+esp32:
+  board: esp32s3box
+  flash_size: 16MB
+  framework:
+    type: arduino
+
+psram:
+  mode: octal
+  speed: 80MHz
+
+time:
+  - platform: homeassistant
+    id: homeassistant_time
+    on_time_sync:
+      then:
+        - pcf85063.write_time: {}
+  - platform: pcf85063
+    id: pcf85063_time
+
+logger:
+
+api:
+  encryption:
+    key: !secret api_encryption_key
+
+ota:
+  - platform: esphome
+    password: !secret ota_password
+
+ethernet:
+  type: W5500
+  clk_pin: GPIO15
+  mosi_pin: GPIO13
+  miso_pin: GPIO14
+  cs_pin: GPIO16
+  interrupt_pin: GPIO12
+
+web_server:
+  port: 80
+
+i2c:
+  sda: GPIO42
+  scl: GPIO41
+  scan: true
+  frequency: 100kHz
+
+# ========================
+# INSTELBAAR VIA HA
+# ========================
+
+number:
+  - platform: template
+    name: "Stall current"
+    id: stall_current
+    min_value: 1.0
+    max_value: 4.0
+    step: 0.1
+    initial_value: 2.3
+    restore_value: true
+    optimistic: true
+
+  - platform: template
+    name: "Stall count"
+    id: stall_count_max
+    min_value: 1
+    max_value: 10
+    step: 1
+    initial_value: 3
+    restore_value: true
+    optimistic: true
+
+  - platform: template
+    name: "Runtime R1"
+    id: runtime1
+    min_value: 5000
+    max_value: 60000
+    step: 500
+    initial_value: 20000
+    restore_value: true
+    optimistic: true
+
+  - platform: template
+    name: "Runtime R2"
+    id: runtime2
+    min_value: 5000
+    max_value: 60000
+    step: 500
+    initial_value: 20000
+    restore_value: true
+    optimistic: true
+
+  - platform: template
+    name: "Runtime R3"
+    id: runtime3
+    min_value: 5000
+    max_value: 60000
+    step: 500
+    initial_value: 20000
+    restore_value: true
+    optimistic: true
+
+  - platform: template
+    name: "Runtime R4"
+    id: runtime4
+    min_value: 5000
+    max_value: 60000
+    step: 500
+    initial_value: 20000
+    restore_value: true
+    optimistic: true
+
+# ========================
+# GLOBALS
+# ========================
+
+globals:
+  # positie
+  - id: pos1
+    type: float
+    restore_value: yes
+    initial_value: "0"
+  - id: pos2
+    type: float
+    restore_value: yes
+    initial_value: "0"
+  - id: pos3
+    type: float
+    restore_value: yes
+    initial_value: "0"
+  - id: pos4
+    type: float
+    restore_value: yes
+    initial_value: "0"
+
+  # richting
+  - id: dir1
+    type: int
+  - id: dir2
+    type: int
+  - id: dir3
+    type: int
+  - id: dir4
+    type: int
+
+  # timing
+  - id: start_time1
+    type: uint32_t
+  - id: start_time2
+    type: uint32_t
+  - id: start_time3
+    type: uint32_t
+  - id: start_time4
+    type: uint32_t
+
+  - id: start_ignore1
+    type: uint32_t
+  - id: start_ignore2
+    type: uint32_t
+  - id: start_ignore3
+    type: uint32_t
+  - id: start_ignore4
+    type: uint32_t
+
+  - id: last_update1
+    type: uint32_t
+  - id: last_update2
+    type: uint32_t
+  - id: last_update3
+    type: uint32_t
+  - id: last_update4
+    type: uint32_t
+
+  # stroom filtering
+  - id: filt1
+    type: float
+  - id: filt2
+    type: float
+  - id: filt3
+    type: float
+  - id: filt4
+    type: float
+
+  - id: prev1
+    type: float
+  - id: prev2
+    type: float
+  - id: prev3
+    type: float
+  - id: prev4
+    type: float
+
+  - id: stall_counter1
+    type: int
+  - id: stall_counter2
+    type: int
+  - id: stall_counter3
+    type: int
+  - id: stall_counter4
+    type: int
+
+# ========================
+# INA226
+# ========================
+
+sensor:
+  - platform: ina226
+    address: 0x40
+    shunt_resistance: 0.1 ohm
+    max_current: 5A
+    adc_averaging: 16
+    update_interval: 100ms
+    current:
+      id: current1
+      name: "Stroom R1"
+      filters:
+        - sliding_window_moving_average:
+            window_size: 5
+            send_every: 1
+
+  - platform: ina226
+    address: 0x41
+    shunt_resistance: 0.1 ohm
+    max_current: 5A
+    adc_averaging: 16
+    update_interval: 100ms
+    current:
+      id: current2
+
+  - platform: ina226
+    address: 0x44
+    shunt_resistance: 0.1 ohm
+    max_current: 5A
+    adc_averaging: 16
+    update_interval: 100ms
+    current:
+      id: current3
+
+  - platform: ina226
+    address: 0x45
+    shunt_resistance: 0.1 ohm
+    max_current: 5A
+    adc_averaging: 16
+    update_interval: 100ms
+    current:
+      id: current4
+
+# ========================
+# RELAYS (interlock)
+# ========================
+
+switch:
+  - platform: gpio
+    pin: GPIO1
+    id: r1_up
+    interlock: [r1_down]
+  - platform: gpio
+    pin: GPIO2
+    id: r1_down
+    interlock: [r1_up]
+
+  - platform: gpio
+    pin: GPIO3
+    id: r2_up
+    interlock: [r2_down]
+  - platform: gpio
+    pin: GPIO4
+    id: r2_down
+    interlock: [r2_up]
+
+  - platform: gpio
+    pin: GPIO5
+    id: r3_up
+    interlock: [r3_down]
+  - platform: gpio
+    pin: GPIO6
+    id: r3_down
+    interlock: [r3_up]
+
+  - platform: gpio
+    pin: GPIO7
+    id: r4_up
+    interlock: [r4_down]
+  - platform: gpio
+    pin: GPIO8
+    id: r4_down
+    interlock: [r4_up]
+
+# ========================
+# COVER
+# ========================
+
+cover:
+  - platform: template
+    name: "Rolluik 1"
+    id: rolluik_1
+    device_class: shutter
+    lambda: "return id(pos1);"
+    has_position: true
+
+    open_action:
+      - lambda: |-
+          id(dir1)=1;
+          id(start_time1)=millis();
+          id(start_ignore1)=millis();
+          id(last_update1)=millis();
+      - switch.turn_off: r1_down
+      - delay: 400ms
+      - switch.turn_on: r1_up
+
+    close_action:
+      - lambda: |-
+          id(dir1)=-1;
+          id(start_time1)=millis();
+          id(start_ignore1)=millis();
+          id(last_update1)=millis();
+      - switch.turn_off: r1_up
+      - delay: 400ms
+      - switch.turn_on: r1_down
+
+    stop_action:
+      - lambda: id(dir1)=0;
+      - switch.turn_off: r1_up
+      - switch.turn_off: r1_down
+
+# ========================
+# INTERVAL LOGICA
+# ========================
+
+interval:
+  - interval: 200ms
+    then:
+      - lambda: |-
+          const float STALL_CURRENT = id(stall_current).state; // instelbare stall threshold in Ampère
+          const int STALL_COUNT_MAX = (int)id(stall_count_max).state; // instelbare teller
+          const uint32_t IGNORE_MS = 800;  // tijd voor soft-start negeren
+          const uint32_t MAX_TIME = 45000; // max runtime in ms
+
+          auto handle_rolluik = [&](int &dir, float current, float &filt, float &prev,
+                                    int &counter, uint32_t start_time, uint32_t start_ignore,
+                                    float &pos, auto *up, auto *down) {
+            uint32_t now = millis();
+
+            // Soft-start filtering van stroom
+            filt = 0.7f * filt + 0.3f * current;
+
+            // Simuleer positie op basis van tijd
+            float dt = 0.2f / 45000.0f;  // interval 200ms / max_time (schatting)
+            if (dir == 1) pos += dt;
+            else if (dir == -1) pos -= dt;
+
+            if (pos > 1.0f) pos = 1.0f;
+            if (pos < 0.0f) pos = 0.0f;
+
+            bool ignore = (now - start_ignore) < IGNORE_MS;
+            bool rising = filt > prev;
+
+            // Stall detectie (alleen buiten ignore periode)
+            if (!ignore) {
+              if (filt > STALL_CURRENT && rising) counter++;
+              else counter = 0;
+            }
+
+            // Stop bij stall
+            if (counter >= STALL_COUNT_MAX) {
+              dir = 0;
+              up->turn_off();      // Changed from up.turn_off()
+              down->turn_off();    // Changed from down.turn_off()
+              counter = 0;
+              return;
+            }
+
+            // Stop bij timeout
+            if (dir != 0 && (now - start_time > MAX_TIME)) {
+              dir = 0;
+              up->turn_off();      // Changed from up.turn_off()
+              down->turn_off();    // Changed from down.turn_off()
+            }
+
+            prev = filt;
+          };

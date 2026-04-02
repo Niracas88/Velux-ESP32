@@ -237,7 +237,7 @@ sensor:
     address: 0x40
     shunt_resistance: 0.1 ohm
     max_current: 5A
-    adc_averaging: 2
+    adc_averaging: 1
     update_interval: 20ms
     current:
       id: current1
@@ -247,7 +247,7 @@ sensor:
     address: 0x41
     shunt_resistance: 0.1 ohm
     max_current: 5A
-    adc_averaging: 2
+    adc_averaging: 1
     update_interval: 20ms
     current:
       id: current2
@@ -257,7 +257,7 @@ sensor:
     address: 0x44
     shunt_resistance: 0.1 ohm
     max_current: 5A
-    adc_averaging: 2
+    adc_averaging: 1
     update_interval: 20ms
     current:
       id: current3
@@ -267,7 +267,7 @@ sensor:
     address: 0x45
     shunt_resistance: 0.1 ohm
     max_current: 5A
-    adc_averaging: 2
+    adc_averaging: 1
     update_interval: 20ms
     current:
       id: current4
